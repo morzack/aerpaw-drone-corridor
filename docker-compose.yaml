@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  sitl:
+    image: radarku/sitl-swarm
+    ports:
+      - 5200:5760
+      - 5201:5770
+      - 5202:5780
+      - 5203:5790
+    environment:
+      - NUMCOPTERS=4
+      - LAT=35.727445
+      - INCREMENTSTEPLAT=0.00000
+      - LON=-78.696527
+      - INCREMENTSTEPLON=0.0001
+      - ALT=0
+
+  ground-service:
+    build: ./ground
+    volumes:
+      - ./ground:/usr/src/app
+    ports:
+      - 5001:80
+
+  drone-1:
+    build: ./drone
+    volumes:
+      - ./volumes/drone1:/usr/src/app/extern
+    ports:
+      - 5101:80
+    environment:
+      - PORT=5770
+    depends_on:
+      - sitl
+
+  drone-2:
+    build: ./drone
+    volumes:
+      - ./volumes/drone2:/usr/src/app/extern
+    ports:
+      - 5102:80
+    environment:
+      - PORT=5780
+    depends_on:
+      - sitl
+
+  drone-3:
+    build: ./drone
+    volumes:
+      - ./volumes/drone3:/usr/src/app/extern
+    ports:
+      - 5103:80
+    environment:
+      - PORT=5790
+    depends_on:
+      - sitl
