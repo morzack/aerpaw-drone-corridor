@@ -1,93 +1,159 @@
 """
 aerpawlib script that controls each drone (independently)
 
-keeps a downlink to the ground station, the drone autopilot, and an open channel
-where each drone broadcasts pos
+communicates with ground station using http, docker stuff should handle other services (ex: mavproxy for downlink)
 """
 
-"""
-circle will make a vehicle (drone is the only supported one for now) fly in a
-3m radius circle centered on where it started. This is a good example of how to
-use velocity control.
+import asyncio
+import math
+import requests
 
-Usage:
-    python -m aerpawlib --conn ... --vehicle ... --script circle
-"""
+from aerpawlib.runner import StateMachine, state
+from aerpawlib.util import VectorNED, Coordinate
+from aerpawlib.vehicle import Drone
 
-print("yeet")
+from util import *
 
-# import asyncio
-# import math
+# TODO load from config
+GROUND_HOST  = "http://ground-service"
+MAV_HOST     = "tcp:drone-1:5100"
+DRONE_ID     = "DRONE-A"
 
-# from aerpawlib.runner import StateMachine, state
-# from aerpawlib.util import VectorNED, Coordinate
-# from aerpawlib.vehicle import Drone
+class PathingDrone(StateMachine):
+    _target_coordinate: Coordinate
+    _world_map: WorldMap
 
-# FLIGHT_ALT = 5      # m
-# CIRCLE_RAD = 10     # m
-# CIRCLE_VEL = 0.25   # m/s
-# N_LAPS = 3
+    @state(name="start", first=True)
+    async def start(self, drone: Drone):
+        # register w/ server
+        # TODO these reqs should be asyncio safe somehow
+        print("registering with GC...")
+        resp = requests.post(
+                url=f"{GROUND_HOST}/drone/add",
+                data={
+                    "id": DRONE_ID,
+                    "connection": MAV_HOST,
+                    })
+        assert resp.status_code == 200
 
-# class Circle(StateMachine):
-#     _target_center: Coordinate
+        # request map definition
+        print("getting map params...")
+        resp = requests.get(
+                url=f"{GROUND_HOST}/drone/{DRONE_ID}/coordinates"
+                )
+        assert resp.status_code == 200
+        j = resp.json()
+        self._world_map = WorldMap(deserialize_coordinate(j["center"]), j["resolution"])
 
-#     @state(name="start", first=True)
-#     async def start(self, drone: Drone):
-#         print("taking off")
-#         await drone.takeoff(FLIGHT_ALT)
-#         self._target_center = drone.position
-#         print("taken off")
-#         return "fly_to_circumference"
+        return "requesting_takeoff"
 
-#     @state(name="fly_to_circumference")
-#     async def fly_out(self, drone: Drone):
-#         print("flying north to the circumference")
-#         await drone.goto_coordinates(self._target_center + VectorNED(CIRCLE_RAD, 0))
-#         return "circularize"
+    @state(name="requesting_takeoff")
+    async def request_takeoff(self, drone: Drone):
+        # ask server to take off
+        print("requesting takeoff...")
+        resp = requests.post(
+                url=f"{GROUND_HOST}/drone/{DRONE_ID}/takeoff"
+                )
+        assert resp.status_code == 200
+        j = resp.json()
+        if not j["clear"]:
+            print("GC said not to take off...")
+            print("waiting 5 sec and trying again")
+            await asyncio.sleep(5)
+            return "requesting_takeoff"
 
-#     _lap = 0
-#     _previous_thetas = []
-#     _prev_avg_theta = None
+        # take off
+        takeoff_alt = j["alt"]
+        print(f"taking off to request alt of {takeoff_alt}...")
+        await drone.takeoff(takeoff_alt)
 
-#     @state(name="circularize")
-#     async def circularize(self, drone: Drone):
-#         current_pos = drone.position
-#         radius_vec = current_pos - self._target_center # points out to drone
+        return "get_path"
 
-#         # calculate perpendicular/tangent vector by taking cross product w/ down
-#         perp_vec = radius_vec.cross_product(VectorNED(0, 0, 1))
+    _path=None
 
-#         # normalize and ignore the height
-#         hypot = perp_vec.hypot(True)
-#         target_velocity = VectorNED(
-#                 perp_vec.north / hypot * CIRCLE_VEL,
-#                 perp_vec.east / hypot * CIRCLE_VEL)
+    @state(name="get_path")
+    async def request_path(self, drone: Drone):
+        # ask server for path to target
+        print("requesting path to target...")
+        resp = requests.post(
+                url=f"{GROUND_HOST}/drone/{DRONE_ID}/pathfind",
+                data=serialize_coordinate(_target_coordiante)
+                )
+        if resp.status_code == 400:
+            print("no path to target.")
+            print("waiting 5s and asking again")
+            await asyncio.sleep(5)
+            return "get_path"
+        if resp.status_code != 200:
+            print("request error. RTL")
+            return "rtl"
+        self._path = resp.json()
+        print("path obtained:")
+        print(self._path)
+        return "next_node"
 
-#         await drone.set_velocity(target_velocity)
-#         await asyncio.sleep(0.1)
-
-#         theta = math.atan2(radius_vec.north, radius_vec.east)
-#         self._previous_thetas.append(theta)
-#         if len(self._previous_thetas) > 10:
-#             self._previous_thetas.pop(0)
-#         avg_theta = sum(self._previous_thetas) / len(self._previous_thetas)
-#         if self._prev_avg_theta == None:
-#             self._prev_avg_theta = avg_theta
+    @state(name="next_node")
+    async def next_node(self, drone: Drone):
+        # find next node in predetermined path
+        print("finding next node in path")
+        current_node = self._world_map.coord_to_block(drone.position)
+        if current_node not in path:
+            print("current node not in path. rerequesting a path and unreserving any blocks")
+            resp = requests.post(
+                    url=f"{GROUND_HOST}/drone/{DRONE_ID}/unreserve"
+                    )
+            if resp.status_code == 500:
+                print("server error. unreservation failed. continuing")
+            return "get_path"
         
-#         # this condition fires when going from 3.14 rad -> -3.14 rad
-#         if self._prev_avg_theta > 0 and avg_theta < 0:
-#             self._lap += 1
-#         self._prev_avg_theta = avg_theta
+        node_index = self._path.index(current_node)
+        if node_index+1 == len(self._path):
+            print("path complete. landing here")
+            return "land"
+        
+        next_block = self._path[current_node+1]
+        next_block_coords = self._world_map.get_block_center(next_block)
+    
+        # request permission to enter block
+        resp = requests.post(
+                url=f"{GROUND_HOST}/drone/{DRONE_ID}/reserve",
+                data=serialize_block(next_block)
+                )
+        if resp.status_code != 200:
+            print("error requesting next block.")
+            print("backing off and trying again...")
+            await asyncio.sleep(5)
+            return "next_node"
+        j = resp.json()
+        if not j["success"]:
+            print("reservation failed.")
+            print("unreserving blocks, waiting 5s and trying again...")
+            resp = requests.post(
+                    url=f"{GROUND_HOST}/drone/{DRONE_ID}/unreserve"
+                    )
+            if resp.status_code == 500:
+                print("server error when unserving nodes. continuing")
+            await asyncio.sleep(5)
+            return "next_node"
 
-#         if self._lap > N_LAPS:
-#             return "rtl"
+        print(f"going to next block {next_block} @ {next_block_coords}")
+        await drone.goto_coordinates(next_block_coords)
 
-#         return "circularize"
+        return "next_node"
 
-#     @state(name="rtl")
-#     async def rtl(self, drone: Drone):
-#         print("returning home")
-#         await drone.goto_coordinates(self._target_center)
-#         print("landing")
-#         await drone.land()
-#         print("done!")
+    @state(name="rtl")
+    async def rtl(self, drone: Drone):
+        # return to the take off location
+        print("returning to home coordinates, horizontally")
+        print("WARNING: the drone is no longer respecting the ground systems")
+        home_coords = Coordinate(
+                drone.home_coords.lat, drone.home_coords.lon, drone.position.alt)
+        await drone.goto_coordinates(home_coords)
+        return "land"
+    
+    @state(name="land")
+    async def land(self, drone: Drone):
+        # land the drone, in place
+        print("landing (not requesting permission)")
+        await drone.land()
+        print("done!")

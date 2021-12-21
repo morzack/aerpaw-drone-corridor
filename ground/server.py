@@ -24,6 +24,21 @@ def pathfind(id):
         abort(400, "no path sadge :(")
     return path
 
+@route('/drone/<id>/takeoff', method='POST')
+def request_takeoff(id):
+    # send alt to take off to and enter airspace, if safe
+    # also request block as part of this
+    drone_block = world_map.drone_block(id)
+    heightslice = world_map.heightslice(drone_block)
+    # attempt to take off into lowest
+    target_block = heightslice[0]
+    success = world_map.reserve_block(id, target_block, skip_adj=True)
+    target_alt = world_map.block_to_coord(target_block)[2] + world_map._resolution/2
+    return {
+        "clear": success,
+        "alt": None if not success else target_alt
+        }
+
 @route('/drone/<id>/coordinates', method='GET')
 def define_coord_system(id):
     # get parameters defining coordinate system [center and resolution]
@@ -43,9 +58,16 @@ def reserve_block(id):
 @route('/drone/<id>/unreserve', method='POST')
 def unreserve_block(id):
     # given a block, attempt to reserve
-    if request.json == None:
-        abort(400, "plz gib json")
-    block_removing = deserialize_block(request.json)
+    if request.json != None:
+        block_removing = deserialize_block(request.json)
+    else:
+        block_removing = None
+        for b in world_map._occupied_blocks:
+            if world_map._occupied_blocks[b] == id:
+                block_removing = b
+                break
+    if block_removing == None:
+        abort(400, "no block to remove")
     success = world_map.unreserve_block(id, block_removing)
     return {"success": success}
 

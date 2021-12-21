@@ -28,30 +28,30 @@ services:
     volumes:
       - ./volumes/drone1:/usr/src/app/extern
     ports:
-      - 5101:80
+      - 5100:5100
     environment:
       - PORT=5770
     depends_on:
       - sitl
 
-  drone-2:
-    build: ./drone
-    volumes:
-      - ./volumes/drone2:/usr/src/app/extern
-    ports:
-      - 5102:80
-    environment:
-      - PORT=5780
-    depends_on:
-      - sitl
+  # drone-2:
+  #   build: ./drone
+  #   volumes:
+  #     - ./volumes/drone2:/usr/src/app/extern
+  #   ports:
+  #     - 5100:5100
+  #   environment:
+  #     - PORT=5780
+  #   depends_on:
+  #     - sitl
 
-  drone-3:
-    build: ./drone
-    volumes:
-      - ./volumes/drone3:/usr/src/app/extern
-    ports:
-      - 5103:80
-    environment:
-      - PORT=5790
-    depends_on:
-      - sitl
+  # drone-3:
+  #   build: ./drone
+  #   volumes:
+  #     - ./volumes/drone3:/usr/src/app/extern
+  #   ports:
+  #     - 5100:5100
+  #   environment:
+  #     - PORT=5790
+  #   depends_on:
+  #     - sitl

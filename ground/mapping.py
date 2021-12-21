@@ -42,6 +42,18 @@ class WorldMap:
         delta_vec = VectorNED(y, x, -z)
         return self._center_coords + delta_vec
 
+    def heightslice(self, a: MapBlockCoord) -> list[MapBlockCoord]:
+        """
+        gets a slice of all declared blocks at a certain x, y coord
+
+        the z (alt) component of the coord passed in is ignored
+        """
+        r = []
+        for block in self._map:
+            if block[0] == a[0] and block[1] == a[1]:
+                r.append(block)
+        return sorted(r, key=lambda x: x[2])
+
     def fill_map(self, a: MapBlockCoord, b: MapBlockCoord, traversable: Traversability):
         """
         fill an area in this map ranging from a -> b with a specific traversability
@@ -80,7 +92,7 @@ class WorldMap:
             return None
         return self.coord_to_block(self._drone_locations[drone_id])
 
-    def can_reserve_block(self, drone_id: str, block: MapBlockCoord) -> MapBlockCoord:
+    def can_reserve_block(self, drone_id: str, block: MapBlockCoord, skip_adj: bool=False) -> MapBlockCoord:
         """
         see if a drone can reserve a block
         
@@ -97,12 +109,13 @@ class WorldMap:
             return False
         
         # adjacent to this drone
-        drone_block = self.drone_block(drone_id)
-        if drone_block == None:
-            return False # invalid drone
-        adjs = adjacent_blocks(drone_block).keys() | {drone_block}
-        if block not in adjs:
-            return False
+        if not skip_adj:
+            drone_block = self.drone_block(drone_id)
+            if drone_block == None:
+                return False # invalid drone
+            adjs = adjacent_blocks(drone_block).keys() | {drone_block}
+            if block not in adjs:
+                return False
         
         # free from drones/drone adjacencies
         drone_adjs = self.drone_adjacent_blocks()
@@ -124,14 +137,14 @@ class WorldMap:
                 return False
         return True
 
-    def reserve_block(self, drone_id: str, block: MapBlockCoord) -> bool:
+    def reserve_block(self, drone_id: str, block: MapBlockCoord, skip_adj: bool=False) -> bool:
         """
         attempt to have a drone "reserve" a block as occupied
         returns bool based on success (and thus if the drone can move in)
 
         a drone must be adjacent to a block and not have any other reservations to do so
         """
-        if not self.can_reserve_block(drone_id, block):
+        if not self.can_reserve_block(drone_id, block, skip_adj=skip_adj):
             return False
 
         for block in self._occupied_blocks:
@@ -156,6 +169,8 @@ class WorldMap:
         this implements a version of dijkstra's algorithm so that we can easily add higher speed blocks later
         
         returns [path] if possible, else None
+
+        TODO this should probably be d* and/or something with caching
         """
         dists = {a: 0}
         paths = {a: None}
@@ -212,7 +227,7 @@ class WorldMap:
         while curr != a:
             path = [curr] + path
             curr = paths[curr]
-        return path
+        return [a] + path
 
 
 if __name__ == "__main__":
