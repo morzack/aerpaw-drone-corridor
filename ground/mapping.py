@@ -27,6 +27,7 @@ class WorldMap:
         self._center_coords = center_coords
         self._resolution = resolution
         self._drone_locations = {} # maps id -> position (Coordinate)
+        self._occupied_blocks = {}
 
     def coord_to_block(self, coord: Coordinate) -> MapBlockCoord:
         delta_vec = coord - self._center_coords
@@ -51,8 +52,15 @@ class WorldMap:
                     self._map[x, y, z] = traversable
 
     def update_drone(self, id: str, coordinate: Coordinate):
+        """
+        update a drone's internal position and unreserve blocks as needed
+        """
         self._drone_locations[id] = coordinate
 
+        block = self.coord_to_block(coordinate)
+        if self._occupied_blocks.get(block, None) == id:
+            self.unreserve_block(id, block)
+    
     def drone_adjacent_blocks(self):
         """
         get dict mapping each drone's position to all blocks adjacent to that drone
@@ -71,6 +79,75 @@ class WorldMap:
         if drone_id not in self._drone_locations:
             return None
         return self.coord_to_block(self._drone_locations[drone_id])
+
+    def can_reserve_block(self, drone_id: str, block: MapBlockCoord) -> MapBlockCorrd:
+        """
+        see if a drone can reserve a block
+        
+        the block must be empty, adjacent, non-reserved, and not adjacent to any reserved blocks for a drone to do so
+        """
+        # non-reserved
+        if block in self._occupied_blocks:
+            return False
+
+        # empty/free
+        if block not in self._map:
+            return False
+        if self._map[block] != Traversability.FREE:
+            return False
+        
+        # adjacent to this drone
+        drone_block = self.drone_block(drone_id)
+        if drone_block == None:
+            return False # invalid drone
+        adjs = adjacent_blocks(drone_block).keys() | {drone_block}
+        if block not in adjs:
+            return False
+        
+        # free from drones/drone adjacencies
+        drone_adjs = self.drone_adjacent_blocks()
+        for id in drone_adjs:
+            if id == drone_id:
+                continue
+            if block in drone_adjs[id]:
+                return False
+
+        # not adjacent to any already reserved
+        reserved_adjs = set()
+        for reserved_block in self._occupied_blocks:
+            reserved_id = self._occupied_blocks[reserved_block]
+            if reserved_id == drone_id:
+                # technically a drone can't reserve a block if it has already reserved one, but the purpose of this
+                # function is more so to test the possiblity of reservation
+                continue
+            if reserved_block == block:
+                return False
+        return True
+
+    def reserve_block(self, drone_id: str, block: MapBlockCoord) -> bool:
+        """
+        attempt to have a drone "reserve" a block as occupied
+        returns bool based on success (and thus if the drone can move in)
+
+        a drone must be adjacent to a block and not have any other reservations to do so
+        """
+        if not self.can_reserve_block(drone_id, block):
+            return False
+
+        for block in self._occupied_blocks:
+            if self._occupied_blocks[block] == drone_id:
+                return False
+
+        self._occupied_blocks[block] = drone_id
+        return True
+
+    def unreserve_block(self, drone_id: str, block: MapBlockCoord) -> bool:
+        if block not in self._occupied_blocks:
+            return False
+        if self._occupied_blocks[block] != drone_id:
+            return False
+        del self._occupied_blocks[block]
+        return True
 
     def find_path(self, a: MapBlockCoord, b: MapBlockCoord, drones_ignoring: set[str]) -> list[MapBlockCoord]:
         """
@@ -92,6 +169,12 @@ class WorldMap:
                 continue
             drone_occupied |= blocks
 
+        reserved = set()
+        for block in self._occupied_blocks:
+            if self._occupied_blocks[block] in drones_ignoring:
+                continue
+            reserved |= adjacent_blocks(block).keys() | {block}
+
         while len(blocks_to_traverse) > 0:
             # treat as priority queue for dijk
             blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: dists[x])
@@ -105,7 +188,7 @@ class WorldMap:
                 if self._map[adj] != Traversability.FREE:
                     # unavailable block
                     continue
-                if adj in drone_occupied:
+                if adj in drone_occupied or adj in reserved:
                     continue
                 
                 d_metric = adj_block_dist[adj]
