@@ -3,9 +3,11 @@ from bottle import route, run, request, abort
 from aerpawlib.util import Coordinate
 
 from mapping import WorldMap
+from monitoring import DroneConnection, DroneListing
 from util import *
 
 world_map: WorldMap = None
+drones: DroneListing = None
 
 @route('/drone/<id>/pathfind', method='POST')
 def pathfind(id):
@@ -65,6 +67,14 @@ def can_reserve(id):
     blocks = [deserialize_block(i) for i in request.json]
     possible = [world_map.can_reserve_block(id, block) for block in blocks]
     return possible
+
+@route('/drone/add', method='POST')
+def add_drone():
+    if request.json == None:
+        abort(400, "plz gib json")
+    id = request.json["id"]
+    conn_str = request.json["connection"]
+    drones.add_drone(id, conn_str)
 
 if __name__ == "__main__":
     # for testing tehe :P

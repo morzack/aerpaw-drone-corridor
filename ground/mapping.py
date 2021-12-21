@@ -80,7 +80,7 @@ class WorldMap:
             return None
         return self.coord_to_block(self._drone_locations[drone_id])
 
-    def can_reserve_block(self, drone_id: str, block: MapBlockCoord) -> MapBlockCorrd:
+    def can_reserve_block(self, drone_id: str, block: MapBlockCoord) -> MapBlockCoord:
         """
         see if a drone can reserve a block
         
