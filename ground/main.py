@@ -21,11 +21,11 @@ import mapping
 from util import *
 
 if __name__ == "__main__":
-    server.world_map = mapping.WorldMap(Coordinate(35.7274488, -78.6960209, 100), 10)
+    server.world_map = mapping.WorldMap(Coordinate(35.7274488, -78.6960209, 30), 10)
     
-    server.world_map.fill_map((-50, -50, -2), (50, 50, 2), Traversability.FREE)
-    server.world_map.fill_map((5, -50, -2), (5, 50, 1), Traversability.BLOCKED)
-    server.world_map.fill_map((5, -50, 2), (5, 49, 2), Traversability.BLOCKED)
+    server.world_map.fill_map((-10, -10, -2), (20, 20, 2), Traversability.FREE)
+    server.world_map.fill_map((5, -10, -2), (5, 20, 1), Traversability.BLOCKED)
+    server.world_map.fill_map((5, -10, 2), (5, 19, 2), Traversability.BLOCKED)
 
     server.drones = monitoring.DroneListing(server.world_map)
     
@@ -34,5 +34,5 @@ if __name__ == "__main__":
     monitoring_thread = threading.Thread(target=monitoring_daemon)
     monitoring_thread.start()
 
-    run(host='localhost', port=8080)
+    run(host='0.0.0.0', port=8080)
     stop.set()

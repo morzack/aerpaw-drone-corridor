@@ -20,7 +20,7 @@ class DroneConnection:
         self._has_heartbeat = False
 
         def _heartbeat_listener(_, __, val):
-            if val > 1 and self._had_heartbeat:
+            if val > 1 and self._has_heartbeat:
                 self._has_heartbeat = False
             elif val < 1 and not self._has_heartbeat:
                 self._has_heartbeat = True
@@ -54,7 +54,7 @@ class DroneListing:
             if drone.vehicle_heartbeat_ok():
                 self._world_map.update_drone(drone._id, drone.location())
                 block = drone.block()
-                print(f"{drone._id} at block {block}")
+                # print(f"{drone._id} at block {block}")
     
     def get_daemon_func(self, stop_event: threading.Event, update_delay: int=1):
         def _inner():

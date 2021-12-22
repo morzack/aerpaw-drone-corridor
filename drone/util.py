@@ -2,7 +2,7 @@
 
 from typing import Tuple
 
-from aerpawlib.util import Coordinate
+from aerpawlib.util import Coordinate, VectorNED
 
 MapBlockCoord = Tuple[int, int, int]    # coord in x, y, z measuring blocks away from central block
                                         # note that +x = east, +y = north, +z = up
@@ -28,7 +28,7 @@ def deserialize_block(x) -> MapBlockCoord:
     return (x["x"], x["y"], x["z"])
 
 class WorldMap:
-    def __init__(self, center_coords: Coordiante, resolution: float):
+    def __init__(self, center_coords: Coordinate, resolution: float):
         self._center_coords = center_coords
         self._resolution = resolution
 

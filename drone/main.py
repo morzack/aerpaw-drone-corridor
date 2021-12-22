@@ -7,6 +7,8 @@ communicates with ground station using http, docker stuff should handle other se
 import asyncio
 import math
 import requests
+import os
+import random
 
 from aerpawlib.runner import StateMachine, state
 from aerpawlib.util import VectorNED, Coordinate
@@ -15,9 +17,11 @@ from aerpawlib.vehicle import Drone
 from util import *
 
 # TODO load from config
-GROUND_HOST  = "http://ground-service"
-MAV_HOST     = "tcp:drone-1:5100"
-DRONE_ID     = "DRONE-A"
+GROUND_HOST  = "http://ground-service:8080"
+MAV_HOST     = "127.0.0.1:5761" if "MAVHOST" not in os.environ else os.environ["MAVHOST"]
+# GROUND_HOST = "http://127.0.0.1:8080"
+# MAV_HOST = "127.0.0.1:5761"
+DRONE_ID     = "DRONE-A" if "DRONEID" not in os.environ else os.environ["DRONEID"]
 
 class PathingDrone(StateMachine):
     _target_coordinate: Coordinate
@@ -30,7 +34,7 @@ class PathingDrone(StateMachine):
         print("registering with GC...")
         resp = requests.post(
                 url=f"{GROUND_HOST}/drone/add",
-                data={
+                json={
                     "id": DRONE_ID,
                     "connection": MAV_HOST,
                     })
@@ -45,6 +49,13 @@ class PathingDrone(StateMachine):
         j = resp.json()
         self._world_map = WorldMap(deserialize_coordinate(j["center"]), j["resolution"])
 
+        # set target coordinates (TODO temp just a block)
+        self._target_coordinate = self._world_map.block_to_coord((10, 0, 0))
+
+        # wait a bit to make sure that the server grabs our location
+        print("waiting to make sure server knows where we are...")
+        await asyncio.sleep(3)
+
         return "requesting_takeoff"
 
     @state(name="requesting_takeoff")
@@ -58,8 +69,8 @@ class PathingDrone(StateMachine):
         j = resp.json()
         if not j["clear"]:
             print("GC said not to take off...")
-            print("waiting 5 sec and trying again")
-            await asyncio.sleep(5)
+            print("waiting ~5 sec and trying again")
+            await asyncio.sleep(random.randint(2, 7))
             return "requesting_takeoff"
 
         # take off
@@ -75,10 +86,17 @@ class PathingDrone(StateMachine):
     async def request_path(self, drone: Drone):
         # ask server for path to target
         print("requesting path to target...")
-        resp = requests.post(
-                url=f"{GROUND_HOST}/drone/{DRONE_ID}/pathfind",
-                data=serialize_coordinate(_target_coordiante)
-                )
+        try:
+            resp = requests.post(
+                    url=f"{GROUND_HOST}/drone/{DRONE_ID}/pathfind",
+                    json=serialize_coordinate(self._target_coordinate),
+                    timeout=None                         # pathfinding is hard :)
+                    )
+        except Exception as e:
+            print("failed to get path. timeout probable")
+            print("using a random backoff")
+            await asyncio.sleep(random.randint(3, 10))
+            return "get_path"
         if resp.status_code == 400:
             print("no path to target.")
             print("waiting 5s and asking again")
@@ -87,7 +105,7 @@ class PathingDrone(StateMachine):
         if resp.status_code != 200:
             print("request error. RTL")
             return "rtl"
-        self._path = resp.json()
+        self._path = [deserialize_block(i) for i in resp.json()["path"]]
         print("path obtained:")
         print(self._path)
         return "next_node"
@@ -97,7 +115,7 @@ class PathingDrone(StateMachine):
         # find next node in predetermined path
         print("finding next node in path")
         current_node = self._world_map.coord_to_block(drone.position)
-        if current_node not in path:
+        if current_node not in self._path:
             print("current node not in path. rerequesting a path and unreserving any blocks")
             resp = requests.post(
                     url=f"{GROUND_HOST}/drone/{DRONE_ID}/unreserve"
@@ -111,13 +129,13 @@ class PathingDrone(StateMachine):
             print("path complete. landing here")
             return "land"
         
-        next_block = self._path[current_node+1]
+        next_block = self._path[node_index+1]
         next_block_coords = self._world_map.get_block_center(next_block)
     
         # request permission to enter block
         resp = requests.post(
                 url=f"{GROUND_HOST}/drone/{DRONE_ID}/reserve",
-                data=serialize_block(next_block)
+                json=serialize_block(next_block)
                 )
         if resp.status_code != 200:
             print("error requesting next block.")
@@ -127,16 +145,16 @@ class PathingDrone(StateMachine):
         j = resp.json()
         if not j["success"]:
             print("reservation failed.")
-            print("unreserving blocks, waiting 5s and trying again...")
+            print("unreserving blocks, waiting 5s and requesting a new path...")
             resp = requests.post(
                     url=f"{GROUND_HOST}/drone/{DRONE_ID}/unreserve"
                     )
             if resp.status_code == 500:
                 print("server error when unserving nodes. continuing")
             await asyncio.sleep(5)
-            return "next_node"
+            return "get_path"
 
-        print(f"going to next block {next_block} @ {next_block_coords}")
+        print(f"going to next block {next_block} @ {next_block_coords.lat, next_block_coords.lon, next_block_coords.alt}")
         await drone.goto_coordinates(next_block_coords)
 
         return "next_node"

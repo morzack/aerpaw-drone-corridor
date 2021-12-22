@@ -22,7 +22,7 @@ def pathfind(id):
     path = world_map.find_path(block_from, block_to, {id})
     if path == None:
         abort(400, "no path sadge :(")
-    return path
+    return {"path": [serialize_block(i) for i in path]}
 
 @route('/drone/<id>/takeoff', method='POST')
 def request_takeoff(id):
@@ -33,7 +33,7 @@ def request_takeoff(id):
     # attempt to take off into lowest
     target_block = heightslice[0]
     success = world_map.reserve_block(id, target_block, skip_adj=True)
-    target_alt = world_map.block_to_coord(target_block)[2] + world_map._resolution/2
+    target_alt = world_map.block_to_coord(target_block).alt + world_map._resolution/2
     return {
         "clear": success,
         "alt": None if not success else target_alt

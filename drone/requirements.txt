@@ -1,0 +1,4 @@
+future==0.18.2
+pymavlink==2.4.19
+requests==2.26.0
+mavproxy==1.8.46

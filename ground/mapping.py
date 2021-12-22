@@ -203,8 +203,8 @@ class WorldMap:
                 if self._map[adj] != Traversability.FREE:
                     # unavailable block
                     continue
-                if adj in drone_occupied or adj in reserved:
-                    continue
+                # if adj in drone_occupied or adj in reserved:
+                #     continue
                 
                 d_metric = adj_block_dist[adj]
                 dist = dists[block] + d_metric # TODO update when introducing speed!

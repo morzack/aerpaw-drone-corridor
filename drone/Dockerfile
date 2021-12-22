@@ -4,9 +4,17 @@ RUN git clone https://github.com/morzack/aerpawlib-vehicle-control.git aerpawlib
 WORKDIR aerpawlib
 RUN python3.8 -m pip install -e .
 
-COPY . /usr/app/src
-WORKDIR /usr/app/src
+RUN mkdir /code
+COPY . /code
+WORKDIR /code
+RUN python3.8 -m pip install -r /code/requirements.txt
+
+RUN apt update
+RUN apt install -y wget screen net-tools
+RUN wget https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh
+RUN chmod +x wait-for-it.sh
 
 ENV PORT 5770
+ENV GROUNDPORT 5761
 
-ENTRYPOINT ["python3.8", "-m aerpawlib", "--conn udp:sitl:${PORT}","--vehicle drone", "--script main"]
+CMD ./start.sh

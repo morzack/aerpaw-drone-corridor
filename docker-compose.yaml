@@ -4,54 +4,152 @@ services:
   sitl:
     image: radarku/sitl-swarm
     ports:
-      - 5200:5760
-      - 5201:5770
-      - 5202:5780
-      - 5203:5790
+      - 5770:5770
+      - 5780:5780
+      - 5790:5790
+      - 5800:5800
+      - 5810:5810
+      # - 5820:5820
+      # - 5830:5830
+      # - 5840:5840
+      # - 5850:5850
     environment:
-      - NUMCOPTERS=4
-      - LAT=35.727445
-      - INCREMENTSTEPLAT=0.00000
-      - LON=-78.696527
-      - INCREMENTSTEPLON=0.0001
+      - INSTANCE=1
+      # - NUMCOPTERS=10
+      - NUMCOPTERS=6
+      - LAT=35.727076
+      - INCREMENTSTEPLAT=0.0003
+      - LON=-78.696812
+      - INCREMENTSTEPLON=0.0000
       - ALT=0
 
   ground-service:
     build: ./ground
-    volumes:
-      - ./ground:/usr/src/app
     ports:
-      - 5001:80
+      - 8080:8080
 
   drone-1:
     build: ./drone
-    volumes:
-      - ./volumes/drone1:/usr/src/app/extern
     ports:
-      - 5100:5100
+      - 14551:5762
     environment:
       - PORT=5770
+      - GROUNDPORT=5761
+      - MAVHOST=:5761
+      - DRONEID=drone1
+      - SYSID=241
     depends_on:
       - sitl
+    command: ["./wait-for-it.sh", "--timeout=0", "sitl:5770", "--", "./start.sh"]
 
-  # drone-2:
+  drone-2:
+    build: ./drone
+    ports:
+      - 14552:5762
+    environment:
+      - PORT=5780
+      - GROUNDPORT=5762
+      - MAVHOST=:5762
+      - DRONEID=drone2
+      - SYSID=242
+    depends_on:
+      - sitl
+    command: ["./wait-for-it.sh", "--timeout=0", "sitl:5780", "--", "./start.sh"]
+  
+  drone-3:
+    build: ./drone
+    ports:
+      - 14553:5762
+    environment:
+      - PORT=5790
+      - GROUNDPORT=5763
+      - MAVHOST=:5763
+      - DRONEID=drone3
+      - SYSID=243
+    depends_on:
+      - sitl
+    command: ["./wait-for-it.sh", "--timeout=0", "sitl:5790", "--", "./start.sh"]
+  
+  drone-4:
+    build: ./drone
+    ports:
+      - 14554:5762
+    environment:
+      - PORT=5800
+      - GROUNDPORT=5764
+      - MAVHOST=:5764
+      - DRONEID=drone4
+      - SYSID=244
+    depends_on:
+      - sitl
+    command: ["./wait-for-it.sh", "--timeout=0", "sitl:5800", "--", "./start.sh"]
+  
+  drone-5:
+    build: ./drone
+    ports:
+      - 14555:5762
+    environment:
+      - PORT=5810
+      - GROUNDPORT=5765
+      - MAVHOST=:5765
+      - DRONEID=drone5
+      - SYSID=245
+    depends_on:
+      - sitl
+    command: ["./wait-for-it.sh", "--timeout=0", "sitl:5810", "--", "./start.sh"]
+  
+  # drone-6:
   #   build: ./drone
-  #   volumes:
-  #     - ./volumes/drone2:/usr/src/app/extern
   #   ports:
-  #     - 5100:5100
+  #     - 14556:5762
   #   environment:
-  #     - PORT=5780
+  #     - PORT=5820
+  #     - GROUNDPORT=5766
+  #     - MAVHOST=:5766
+  #     - DRONEID=drone6
+  #     - SYSID=246
   #   depends_on:
   #     - sitl
+  #   command: ["./wait-for-it.sh", "--timeout=0", "sitl:5820", "--", "./start.sh"]
 
-  # drone-3:
+  # drone-7:
   #   build: ./drone
-  #   volumes:
-  #     - ./volumes/drone3:/usr/src/app/extern
   #   ports:
-  #     - 5100:5100
+  #     - 14557:5762
   #   environment:
-  #     - PORT=5790
+  #     - PORT=5830
+  #     - GROUNDPORT=5767
+  #     - MAVHOST=:5767
+  #     - DRONEID=drone7
+  #     - SYSID=247
   #   depends_on:
   #     - sitl
+  #   command: ["./wait-for-it.sh", "--timeout=0", "sitl:5830", "--", "./start.sh"]
+  
+  # drone-8:
+  #   build: ./drone
+  #   ports:
+  #     - 14558:5762
+  #   environment:
+  #     - PORT=5840
+  #     - GROUNDPORT=5768
+  #     - MAVHOST=:5768
+  #     - DRONEID=drone8
+  #     - SYSID=248
+  #   depends_on:
+  #     - sitl
+  #   command: ["./wait-for-it.sh", "--timeout=0", "sitl:5840", "--", "./start.sh"]
+  
+  # drone-9:
+  #   build: ./drone
+  #   ports:
+  #     - 14559:5762
+  #   environment:
+  #     - PORT=5850
+  #     - GROUNDPORT=5769
+  #     - MAVHOST=:5769
+  #     - DRONEID=drone9
+  #     - SYSID=249
+  #   depends_on:
+  #     - sitl
+  #   command: ["./wait-for-it.sh", "--timeout=0", "sitl:5850", "--", "./start.sh"]
