@@ -22,10 +22,11 @@ MAV_HOST     = "127.0.0.1:5761" if "MAVHOST" not in os.environ else os.environ["
 # GROUND_HOST = "http://127.0.0.1:8080"
 # MAV_HOST = "127.0.0.1:5761"
 DRONE_ID     = "DRONE-A" if "DRONEID" not in os.environ else os.environ["DRONEID"]
+TARGET_COORD = Coordinate(*[float(i) for i in os.environ["TARGETCOORD"].split(",")], 0)
 
 class PathingDrone(StateMachine):
-    _target_coordinate: Coordinate
     _world_map: WorldMap
+    _target_coordinate: Coordinate
 
     @state(name="start", first=True)
     async def start(self, drone: Drone):
@@ -48,13 +49,12 @@ class PathingDrone(StateMachine):
         assert resp.status_code == 200
         j = resp.json()
         self._world_map = WorldMap(deserialize_coordinate(j["center"]), j["resolution"])
-
-        # set target coordinates (TODO temp just a block)
-        self._target_coordinate = self._world_map.block_to_coord((10, 0, 0))
+        
+        self._target_coordinate = Coordinate(TARGET_COORD.lat, TARGET_COORD.lon, self._world_map._center_coords.alt)
 
         # wait a bit to make sure that the server grabs our location
         print("waiting to make sure server knows where we are...")
-        await asyncio.sleep(3)
+        await asyncio.sleep(5)
 
         return "requesting_takeoff"
 
@@ -98,7 +98,8 @@ class PathingDrone(StateMachine):
             await asyncio.sleep(random.randint(3, 10))
             return "get_path"
         if resp.status_code == 400:
-            print("no path to target.")
+            print(f"no path to target {serialize_coordinate(self._target_coordinate)}")
+            print(f"coord in block {self._world_map.coord_to_block(self._target_coordinate)}")
             print("waiting 5s and asking again")
             await asyncio.sleep(5)
             return "get_path"

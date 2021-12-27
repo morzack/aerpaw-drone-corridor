@@ -23,7 +23,7 @@ from util import *
 if __name__ == "__main__":
     server.world_map = mapping.WorldMap(Coordinate(35.7274488, -78.6960209, 30), 10)
     
-    server.world_map.fill_map((-10, -10, -2), (20, 20, 2), Traversability.FREE)
+    server.world_map.fill_map((-20, -10, -2), (20, 20, 2), Traversability.FREE)
     server.world_map.fill_map((5, -10, -2), (5, 20, 1), Traversability.BLOCKED)
     server.world_map.fill_map((5, -10, 2), (5, 19, 2), Traversability.BLOCKED)
 

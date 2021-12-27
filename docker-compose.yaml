@@ -38,6 +38,7 @@ services:
       - MAVHOST=:5761
       - DRONEID=drone1
       - SYSID=241
+      - TARGETCOORD=35.7282,-78.694987
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5770", "--", "./start.sh"]
@@ -52,6 +53,7 @@ services:
       - MAVHOST=:5762
       - DRONEID=drone2
       - SYSID=242
+      - TARGETCOORD=35.7279,-78.694987
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5780", "--", "./start.sh"]
@@ -66,6 +68,7 @@ services:
       - MAVHOST=:5763
       - DRONEID=drone3
       - SYSID=243
+      - TARGETCOORD=35.7276,-78.694987
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5790", "--", "./start.sh"]
@@ -80,6 +83,7 @@ services:
       - MAVHOST=:5764
       - DRONEID=drone4
       - SYSID=244
+      - TARGETCOORD=35.7273,-78.694987
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5800", "--", "./start.sh"]
@@ -94,6 +98,7 @@ services:
       - MAVHOST=:5765
       - DRONEID=drone5
       - SYSID=245
+      - TARGETCOORD=35.7270,-78.694987
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5810", "--", "./start.sh"]

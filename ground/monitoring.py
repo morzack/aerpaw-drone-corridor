@@ -46,14 +46,11 @@ class DroneListing:
         new_drone = DroneConnection(id, conn_str, self._world_map)
         self._drones[id] = new_drone
 
-    def remove_drone(self, id: str):
-        self._drones
-
     def update_map(self):
         for drone in self._drones.values():
-            if drone.vehicle_heartbeat_ok():
+            if drone.vehicle_heartbeat_ok() and drone.location() != None:
                 self._world_map.update_drone(drone._id, drone.location())
-                block = drone.block()
+                # block = drone.block()
                 # print(f"{drone._id} at block {block}")
     
     def get_daemon_func(self, stop_event: threading.Event, update_delay: int=1):
