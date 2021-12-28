@@ -6,6 +6,7 @@ import dronekit
 from aerpawlib.util import Coordinate
 
 from mapping import WorldMap
+from ground_logger import Logger
 from util import *
 
 
@@ -31,16 +32,21 @@ class DroneConnection:
 
     def location(self) -> Coordinate:
         loc = self._vehicle.location.global_relative_frame
+        if loc.lat == None or loc.lon == None or loc.alt == None:
+            return None
         return Coordinate(loc.lat, loc.lon, loc.alt)
 
     def block(self) -> MapBlockCoord:
+        if self.location() == None:
+            return None
         return self._world_map.coord_to_block(self.location())
 
 
 class DroneListing:
-    def __init__(self, world_map: WorldMap):
+    def __init__(self, world_map: WorldMap, logger: Logger):
         self._world_map = world_map
         self._drones = {}
+        self._logger = logger
     
     def add_drone(self, id: str, conn_str: str):
         new_drone = DroneConnection(id, conn_str, self._world_map)
@@ -48,10 +54,9 @@ class DroneListing:
 
     def update_map(self):
         for drone in self._drones.values():
-            if drone.vehicle_heartbeat_ok() and drone.location() != None:
+            if drone.vehicle_heartbeat_ok() and drone.location() != None and drone.block() != None:
                 self._world_map.update_drone(drone._id, drone.location())
-                # block = drone.block()
-                # print(f"{drone._id} at block {block}")
+                self._logger.update_drone(drone._id, drone.block())
     
     def get_daemon_func(self, stop_event: threading.Event, update_delay: int=1):
         def _inner():

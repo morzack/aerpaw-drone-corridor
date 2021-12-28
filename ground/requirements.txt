@@ -2,3 +2,4 @@ future==0.18.2
 pymavlink==2.4.19
 requests==2.26.0
 bottle==0.12.19
+pykml==0.2.0

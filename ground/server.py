@@ -4,10 +4,12 @@ from aerpawlib.util import Coordinate
 
 from mapping import WorldMap
 from monitoring import DroneConnection, DroneListing
+from ground_logger import Logger
 from util import *
 
 world_map: WorldMap = None
 drones: DroneListing = None
+logger: Logger = None
 
 @route('/drone/<id>/pathfind', method='POST')
 def pathfind(id):
@@ -97,6 +99,11 @@ def add_drone():
     id = request.json["id"]
     conn_str = request.json["connection"]
     drones.add_drone(id, conn_str)
+
+@route('/log/kml', method='GET')
+def get_drone_paths():
+    kml = logger.serialize_kml()
+    return kml
 
 if __name__ == "__main__":
     # for testing tehe :P

@@ -18,6 +18,7 @@ from aerpawlib.util import Coordinate
 import server
 import monitoring
 import mapping
+import ground_logger
 from util import *
 
 if __name__ == "__main__":
@@ -27,7 +28,8 @@ if __name__ == "__main__":
     server.world_map.fill_map((5, -10, -2), (5, 20, 1), Traversability.BLOCKED)
     server.world_map.fill_map((5, -10, 2), (5, 19, 2), Traversability.BLOCKED)
 
-    server.drones = monitoring.DroneListing(server.world_map)
+    server.logger = ground_logger.Logger(server.world_map)
+    server.drones = monitoring.DroneListing(server.world_map, server.logger)
     
     stop = threading.Event()
     monitoring_daemon = server.drones.get_daemon_func(stop, 1)
