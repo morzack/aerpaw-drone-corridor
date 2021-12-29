@@ -189,10 +189,13 @@ class WorldMap:
             if self._occupied_blocks[block] in drones_ignoring:
                 continue
             reserved |= adjacent_blocks(block).keys() | {block}
-
+        
+        s = 0
         while len(blocks_to_traverse) > 0:
             # treat as priority queue for dijk
-            blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: dists[x])
+            # blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: dists[x]) # dijk
+            blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: math.hypot(b[0]-x[0], b[1]-x[1], b[2]-x[2])) # a*
+            s += 1
 
             block = blocks_to_traverse[0]
             adj_block_dist = adjacent_blocks(block)
@@ -215,7 +218,9 @@ class WorldMap:
                     paths[adj] = block
                     dists[adj] = dist
                     blocks_to_traverse.append(adj)
-
+            
+            if block == b:
+                break
             blocks_to_traverse.pop(0)
         
         if b not in paths:
