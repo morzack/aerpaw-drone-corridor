@@ -41,6 +41,14 @@ def request_takeoff(id):
         "alt": None if not success else target_alt
         }
 
+@route('/viewer/coordinates', method='GET')
+def define_coord_system():
+    # get parameters defining coordinate system [center and resolution]
+    return {
+        "center": serialize_coordinate(world_map._center_coords),
+        "resolution": world_map._resolution
+        }
+
 @route('/drone/<id>/coordinates', method='GET')
 def define_coord_system(id):
     # get parameters defining coordinate system [center and resolution]
@@ -104,6 +112,29 @@ def add_drone():
 def get_drone_paths():
     kml = logger.serialize_kml()
     return kml
+
+@route('/viewer/map', method='GET')
+def get_map():
+    map_blocks = []
+    map_occupied = []
+
+    for block in world_map._map:
+        map_blocks.append({
+            "block": serialize_block(block),
+            "val": world_map._map[block].value,
+            })
+    
+    for drone_name in world_map._drone_locations:
+        drone = world_map._drone_locations[drone_name]
+        map_occupied.append({
+            "block": serialize_block(world_map.coord_to_block(drone)),
+            "val": drone_name,
+            })
+
+    return {
+            "blocks": map_blocks,
+            "occupied": map_occupied,
+            }
 
 if __name__ == "__main__":
     # for testing tehe :P
