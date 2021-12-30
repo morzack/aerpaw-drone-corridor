@@ -24,9 +24,9 @@ from util import *
 if __name__ == "__main__":
     server.world_map = mapping.WorldMap(Coordinate(35.7274488, -78.6960209, 30), 10)
     
-    server.world_map.fill_map((-20, -10, -2), (20, 20, 2), Traversability.FREE)
-    server.world_map.fill_map((5, -10, -2), (5, 20, 1), Traversability.BLOCKED)
-    server.world_map.fill_map((5, -10, 2), (5, 19, 2), Traversability.BLOCKED)
+    server.world_map.fill_map((-30, -40, -2), (30, 30, 2), Traversability.FREE)
+    server.world_map.fill_map((-30, 0, -2), (30, 10, 2), Traversability.BLOCKED)
+    server.world_map.fill_map((-3, 0, -1), (3, 10, 1), Traversability.FREE)
 
     server.logger = ground_logger.Logger(server.world_map)
     server.drones = monitoring.DroneListing(server.world_map, server.logger)

@@ -19,7 +19,7 @@ SetTargetFPS(60)
 cameraPtr = ffi.new("struct Camera3D *")
 camera = cameraPtr[0]
 
-camera.position = [15., 5., 15.]
+camera.position = [15., 0., 15.]
 camera.target = [0., 2., 0.]
 camera.up = [0., 1., 0.]
 camera.fovy = 60.

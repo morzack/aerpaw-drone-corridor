@@ -190,12 +190,10 @@ class WorldMap:
                 continue
             reserved |= adjacent_blocks(block).keys() | {block}
         
-        s = 0
         while len(blocks_to_traverse) > 0:
             # treat as priority queue for dijk
             # blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: dists[x]) # dijk
             blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: math.hypot(b[0]-x[0], b[1]-x[1], b[2]-x[2])) # a*
-            s += 1
 
             block = blocks_to_traverse[0]
             adj_block_dist = adjacent_blocks(block)
@@ -206,8 +204,8 @@ class WorldMap:
                 if self._map[adj] != Traversability.FREE:
                     # unavailable block
                     continue
-                # if adj in drone_occupied or adj in reserved:
-                #     continue
+                if adj in drone_occupied or adj in reserved:
+                    continue
                 
                 d_metric = adj_block_dist[adj]
                 dist = dists[block] + d_metric # TODO update when introducing speed!
