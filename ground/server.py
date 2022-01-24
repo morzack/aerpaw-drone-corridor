@@ -136,6 +136,15 @@ def get_map():
             "occupied": map_occupied,
             }
 
+@route('/map/update', method='POST')
+def update_map():
+    if request.json == None:
+        abort(400, "plz gib json")
+    a = deserialize_block(request.json["a"])
+    b = deserialize_block(request.json["b"])
+    traversability = Traversability.FREE if request.json["empty"] else Traversability.BLOCKED
+    world_map.fill_map(a, b, traversability)
+
 if __name__ == "__main__":
     # for testing tehe :P
     world_map = WorldMap(Coordinate(35.7274488, -78.6960209, 100), 10)

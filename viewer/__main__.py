@@ -25,8 +25,8 @@ camera.up = [0., 1., 0.]
 camera.fovy = 60.
 camera.projection = CAMERA_PERSPECTIVE
 
-SetCameraMode(camera, CAMERA_FIRST_PERSON)
-# SetCameraMode(camera, CAMERA_FREE)
+# SetCameraMode(camera, CAMERA_FIRST_PERSON)
+SetCameraMode(camera, CAMERA_FREE)
 # SetCameraMode(camera, CAMERA_ORBITAL)
 
 world = MapHandler("localhost:8080")
