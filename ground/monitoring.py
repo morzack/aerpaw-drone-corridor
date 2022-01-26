@@ -5,9 +5,10 @@ import dronekit
 
 from aerpawlib.util import Coordinate
 
-from mapping import WorldMap
-from ground_logger import Logger
-from util import *
+from lib.mapping import WorldMap
+from lib.util import *
+
+from ground.ground_logger import Logger
 
 
 class DroneConnection:

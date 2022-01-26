@@ -13,4 +13,4 @@ screen -S mavproxy -dm mavproxy.py \
 
 sleep 5
 
-python3.8 -u -m aerpawlib --conn :5760 --vehicle drone --script main
+python3.8 -u -m aerpawlib --conn :5760 --vehicle drone --script drone

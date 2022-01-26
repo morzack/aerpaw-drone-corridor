@@ -7,8 +7,8 @@ from pykml.factory import GX_ElementMaker as GX
 
 from aerpawlib.util import Coordinate
 
-from util import *
-from mapping import WorldMap
+from lib.util import *
+from lib.mapping import WorldMap
 
 class Logger:
     def __init__(self, world_map: WorldMap):

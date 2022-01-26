@@ -15,11 +15,12 @@ from bottle import run
 
 from aerpawlib.util import Coordinate
 
-import server
-import monitoring
-import mapping
-import ground_logger
-from util import *
+import ground.server as server
+import ground.monitoring as monitoring
+import ground.ground_logger as ground_logger
+
+import lib.mapping as mapping
+from lib.util import *
 
 if __name__ == "__main__":
     server.world_map = mapping.WorldMap(Coordinate(35.7274488, -78.6960209, 30), 10)

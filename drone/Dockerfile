@@ -7,7 +7,7 @@ RUN python3.8 -m pip install -e .
 RUN mkdir /code
 COPY . /code
 WORKDIR /code
-RUN python3.8 -m pip install -r /code/requirements.txt
+RUN python3.8 -m pip install -r /code/drone/requirements.txt
 
 RUN apt update
 RUN apt install -y wget screen net-tools
@@ -17,4 +17,4 @@ RUN chmod +x wait-for-it.sh
 ENV PORT 5770
 ENV GROUNDPORT 5761
 
-CMD ./start.sh
+CMD ./drone/start.sh

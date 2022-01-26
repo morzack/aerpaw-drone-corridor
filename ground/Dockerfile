@@ -6,6 +6,6 @@ RUN python -m pip install -e .
 
 COPY . /usr/src/app
 WORKDIR /usr/src/app
-RUN python -m pip install -r requirements.txt
+RUN python -m pip install -r ground/requirements.txt
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "ground"]

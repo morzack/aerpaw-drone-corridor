@@ -5,7 +5,31 @@ from aerpawlib.util import Coordinate, VectorNED
 
 from lib.util import *
 
-class WorldMap:
+class MapBlockCoordSystem:
+    def __init__(self, center_coords: Coordinate, resolution: float):
+        self._center_coords = center_coords
+        self._resolution = resolution
+
+    def coord_to_block(self, coord: Coordinate) -> MapBlockCoord:
+        delta_vec = coord - self._center_coords
+        x, y, z = [int(i // self._resolution) for i in [delta_vec.east, delta_vec.north, -delta_vec.down]]
+        return (x, y, z)
+
+    def block_to_coord(self, block: MapBlockCoord) -> Coordinate:
+        """
+        returns the coordinate representing the corner of the block
+        """
+        x, y, z = [i*self._resolution for i in block]
+        delta_vec = VectorNED(y, x, -z)
+        return self._center_coords + delta_vec
+
+    def get_block_center(self, block: MapBlockCoord) -> Coordinate:
+        x, y, z = [i*self._resolution for i in block]
+        x, y, z = [i+(0.5 * self._resolution) for i in [x,y,z]]
+        delta_vec = VectorNED(y, x, -z)
+        return self._center_coords + delta_vec
+
+class WorldMap(MapBlockCoordSystem):
     """
     keeps track of free space that can be traversed and does pathfinding as needed
 
@@ -23,26 +47,12 @@ class WorldMap:
 
         resolution defines the size of a block, in meters
         """
+        super().__init__(center_coords, resolution)
         self._map = {}
-        self._center_coords = center_coords
-        self._resolution = resolution
         self._drone_locations = {} # maps id -> position (Coordinate)
         self._occupied_blocks = {}
 
-    def coord_to_block(self, coord: Coordinate) -> MapBlockCoord:
-        delta_vec = coord - self._center_coords
-        x, y, z = [int(i // self._resolution) for i in [delta_vec.east, delta_vec.north, -delta_vec.down]]
-        return (x, y, z)
-
-    def block_to_coord(self, block: MapBlockCoord) -> Coordinate:
-        """
-        returns the coordinate representing the corner of the block
-        """
-        x, y, z = [i*self._resolution for i in block]
-        delta_vec = VectorNED(y, x, -z)
-        return self._center_coords + delta_vec
-
-    def heightslice(self, a: MapBlockCoord) -> list[MapBlockCoord]:
+    def heightslice(self, a: MapBlockCoord):
         """
         gets a slice of all declared blocks at a certain x, y coord
 
@@ -162,7 +172,7 @@ class WorldMap:
         del self._occupied_blocks[block]
         return True
 
-    def find_path(self, a: MapBlockCoord, b: MapBlockCoord, drones_ignoring: set[str]) -> list[MapBlockCoord]:
+    def find_path(self, a: MapBlockCoord, b: MapBlockCoord, drones_ignoring):
         """
         find an optimal path from block "a" to block "b" avoiding any obstacles/adjacent-to-drone blocks
 
@@ -192,7 +202,8 @@ class WorldMap:
 
         while len(blocks_to_traverse) > 0:
             # treat as priority queue for dijk
-            blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: dists[x])
+            # blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: dists[x]) # dijk
+            blocks_to_traverse = sorted(blocks_to_traverse, key=lambda x: math.hypot(b[0]-x[0], b[1]-x[1], b[2]-x[2])) # a*
 
             block = blocks_to_traverse[0]
             adj_block_dist = adjacent_blocks(block)
@@ -203,8 +214,8 @@ class WorldMap:
                 if self._map[adj] != Traversability.FREE:
                     # unavailable block
                     continue
-                # if adj in drone_occupied or adj in reserved:
-                #     continue
+                if adj in drone_occupied or adj in reserved:
+                    continue
                 
                 d_metric = adj_block_dist[adj]
                 dist = dists[block] + d_metric # TODO update when introducing speed!
@@ -215,7 +226,9 @@ class WorldMap:
                     paths[adj] = block
                     dists[adj] = dist
                     blocks_to_traverse.append(adj)
-
+    
+            if block == b:
+                break
             blocks_to_traverse.pop(0)
         
         if b not in paths:

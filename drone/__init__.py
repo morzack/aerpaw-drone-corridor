@@ -14,10 +14,11 @@ from aerpawlib.runner import StateMachine, state
 from aerpawlib.util import VectorNED, Coordinate
 from aerpawlib.vehicle import Drone
 
-from util import *
+from lib.util import *
+from lib.mapping import *
 
 # TODO load from config
-GROUND_HOST  = "http://ground-service:8080"
+GROUND_HOST  = "http://ground-service:8080" if "GROUNDHOST" not in os.environ else os.environ["GROUNDHOST"]
 MAV_HOST     = "127.0.0.1:5761" if "MAVHOST" not in os.environ else os.environ["MAVHOST"]
 # GROUND_HOST = "http://127.0.0.1:8080"
 # MAV_HOST = "127.0.0.1:5761"
@@ -25,7 +26,7 @@ DRONE_ID     = "DRONE-A" if "DRONEID" not in os.environ else os.environ["DRONEID
 TARGET_COORD = Coordinate(*[float(i) for i in os.environ["TARGETCOORD"].split(",")], 0)
 
 class PathingDrone(StateMachine):
-    _world_map: WorldMap
+    _world_map: MapBlockCoordSystem
     _target_coordinate: Coordinate
 
     @state(name="start", first=True)
@@ -48,7 +49,7 @@ class PathingDrone(StateMachine):
                 )
         assert resp.status_code == 200
         j = resp.json()
-        self._world_map = WorldMap(deserialize_coordinate(j["center"]), j["resolution"])
+        self._world_map = MapBlockCoordSystem(deserialize_coordinate(j["center"]), j["resolution"])
         
         self._target_coordinate = Coordinate(TARGET_COORD.lat, TARGET_COORD.lon, self._world_map._center_coords.alt)
 

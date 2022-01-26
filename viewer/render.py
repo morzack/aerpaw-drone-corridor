@@ -7,7 +7,7 @@ def reset_outlines():
     global drawn_outlines
     drawn_outlines = []
 
-def draw_cube(camera, pos, color, world_map: WorldMap, text: str=""):
+def draw_cube(camera, pos, color, world_map: MapBlockCoordSystem, text: str=""):
     # global drawn_outlines
     # for adj in adjacent_blocks(pos).keys():
     #     posadj = [-adj[0]+.5, adj[2]+.5, adj[1]+.5]

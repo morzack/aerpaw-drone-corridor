@@ -2,10 +2,11 @@ from bottle import route, run, request, abort
 
 from aerpawlib.util import Coordinate
 
-from mapping import WorldMap
-from monitoring import DroneConnection, DroneListing
-from ground_logger import Logger
-from util import *
+from lib.mapping import WorldMap
+from lib.util import *
+
+from ground.monitoring import DroneConnection, DroneListing
+from ground.ground_logger import Logger
 
 world_map: WorldMap = None
 drones: DroneListing = None

@@ -2,3 +2,4 @@ volumes/
 __pycache__
 mav.*
 mav_*.*
+drone_corridor_env/
