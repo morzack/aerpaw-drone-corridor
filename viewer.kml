@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+
+<Document>
+  <visibility>1</visibility>
+  <NetworkLink>
+    <name>aerpaw kml viewer</name>
+    <refreshVisibility>0</refreshVisibility>
+    <flyToView>0</flyToView>
+    <Link>
+        <href>http://localhost:8080/log/kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>4</refreshInterval>
+    </Link>
+  </NetworkLink>
+</Document>
+</kml>
