@@ -45,3 +45,9 @@ param set DISARM_DELAY 0
 
 there's an open mavproxy port for each drone at `tcp:0.0.0.0:14551...n`.
 this can be used for qgroundcontrol
+
+TODO
+
+- event into automation somehow
+- make paths nicer
+- simplify to geojson

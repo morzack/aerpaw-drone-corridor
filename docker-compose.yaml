@@ -11,10 +11,10 @@ services:
     environment:
       - INSTANCE=1
       - NUMCOPTERS=5
-      - LAT=35.729498
+      - LAT=35.728554
       - INCREMENTSTEPLAT=0.0000
-      - LON=-78.696408
-      - INCREMENTSTEPLON=-0.0003
+      - LON=-78.696494
+      - INCREMENTSTEPLON=0.0003
       - ALT=0
 
   ground-service:
@@ -36,7 +36,7 @@ services:
       - MAVHOST=:5761
       - DRONEID=drone1
       - SYSID=241
-      - TARGETCOORD=35.7262,-78.6948
+      - TARGETCOORD=35.727052,-78.696694
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5770", "--", "./drone/start.sh"]
@@ -53,7 +53,7 @@ services:
       - MAVHOST=:5762
       - DRONEID=drone2
       - SYSID=242
-      - TARGETCOORD=35.7262,-78.6951
+      - TARGETCOORD=35.727052,-78.696294
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5780", "--", "./drone/start.sh"]
@@ -70,7 +70,7 @@ services:
       - MAVHOST=:5763
       - DRONEID=drone3
       - SYSID=243
-      - TARGETCOORD=35.7262,-78.6954
+      - TARGETCOORD=35.727052,-78.696494
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5790", "--", "./drone/start.sh"]
@@ -87,7 +87,7 @@ services:
       - MAVHOST=:5764
       - DRONEID=drone4
       - SYSID=244
-      - TARGETCOORD=35.7262,-78.6957
+      - TARGETCOORD=35.727052,-78.696094
     depends_on:
       - sitl
     command: ["./wait-for-it.sh", "--timeout=0", "sitl:5800", "--", "./drone/start.sh"]

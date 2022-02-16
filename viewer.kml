@@ -10,7 +10,7 @@
     <Link>
         <href>http://localhost:8080/log/kml</href>
         <refreshMode>onInterval</refreshMode>
-        <refreshInterval>4</refreshInterval>
+        <refreshInterval>3</refreshInterval>
     </Link>
   </NetworkLink>
 </Document>

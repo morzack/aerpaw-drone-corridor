@@ -5,6 +5,9 @@ from pykml.parser import Schema
 from pykml.factory import KML_ElementMaker as KML
 from pykml.factory import GX_ElementMaker as GX
 
+from quad_mesh_simplify import simplify_mesh
+import numpy as np
+
 from aerpawlib.util import Coordinate, VectorNED
 
 from lib.util import *
@@ -82,13 +85,14 @@ class Logger:
             return (round(x, 1), round(y, 1), round(z, 1))
 
         triangles = set()
+        targeting = Traversability.FREE # or BLOCKED
         for block_coord in coords_searching:
-            if block_coord in m and m[block_coord] == Traversability.BLOCKED:
+            if block_coord in m and m[block_coord] == targeting:
                 continue
             
             corners = _get_corners(block_coord)
             for adj in _get_adj(block_coord):
-                if adj in m and m[adj] == Traversability.BLOCKED:
+                if adj in m and m[adj] == targeting:
                     # add face
                     points = list(corners & _get_corners(adj))
                     # share [0] and [1]
@@ -96,15 +100,66 @@ class Logger:
                     t_2 = tuple(sorted([points[0], points[1], points[3]]))
                     triangles |= {t_1, t_2}
 
+        # simplify mesh
+        # find corners/faces a la obj
+        positions = []
+        faces = []
+        for t in triangles:
+            f = []
+            for c in t:
+                if c not in positions:
+                    positions.append(c)
+                f.append(positions.index(c))
+            faces.append(f)
+        positions, faces = simplify_mesh(np.array(positions), np.array(faces, dtype=np.uint32), 600)
+        
+        # # find distinct submeshes to avoid simplification issues
+        # submeshes = [] # collection of collection of corner idxs
+        # accounted = set() # flattened ^
+        
+        # def _recursive_find_corners(corner_idx, corner_group, depth=0, max_depth=40):
+        #     if corner_idx in accounted:
+        #         return
+        #     if depth >= max_depth:
+        #         return
+        #     # get triangle corners w/ this corner
+        #     cors = set()
+        #     for f_idx, face in enumerate(faces):
+        #         if corner_idx in face:
+        #             corner_group.append(face)
+        #             cors |= set(face)
+        #     accounted.add(corner_idx)
+        #     for c in cors:
+        #         _recursive_find_corners(c, corner_group, depth+1)
+
+        # for c_idx, corner in enumerate(corners):
+        #     s = []
+        #     _recursive_find_corners(c_idx, s)
+        #     print(s)
+        #     if len(s) != 0:
+        #         submeshes.append(s)
+
+        # triangles = []
+        # for submesh in submeshes:
+        #     new_positions, new_face = simplify_mesh(np.array(corners), np.array(submesh), 30)
+        #     for face in new_face:
+        #         triangles.append([new_positions[i] for i in face])
+        # print(triangles)
+
         # convert triangles to world space
         def _coord_to_world_raw(coord):
             x, y, z = [i*self._world_map._resolution for i in coord]
             delta_vec = VectorNED(y, x, -z)
             return self._world_map._center_coords + delta_vec
 
+        # world_triangles = []
+        # for triangle in triangles:
+        #     c1, c2, c3 = [_coord_to_world_raw(c) for c in triangle]
+        #     world_triangles.append((c1, c2, c3))
+        
         world_triangles = []
-        for triangle in triangles:
-            c1, c2, c3 = [_coord_to_world_raw(c) for c in triangle]
+        for triangle in faces:
+            c1, c2, c3 = [_coord_to_world_raw(positions[c]) for c in triangle]
             world_triangles.append((c1, c2, c3))
 
         # convert coordinates defining poly tris to lines to be rendered in KML

@@ -25,10 +25,10 @@ from lib.util import *
 if __name__ == "__main__":
     server.world_map = mapping.WorldMap(Coordinate(35.7274488, -78.6960209, 30), 10)
     
-    server.world_map.fill_map((-30, -40, -2), (30, 30, 2), Traversability.FREE)
-    server.world_map.fill_map((-30, 0, -2), (30, 10, 2), Traversability.BLOCKED)
-    # server.world_map.fill_map((-30, 0, 0), (30, 0, 0), Traversability.BLOCKED)
-    server.world_map.fill_map((-3, 0, -2), (3, 10, 2), Traversability.FREE)
+    server.world_map.fill_map((-10, -40, -2), (10, 30, 2), Traversability.FREE)
+    server.world_map.fill_map((-10, 0, -2), (10, 10, 2), Traversability.BLOCKED)
+    server.world_map.fill_map((0, 0, -2), (2, 10, 2), Traversability.FREE)
+    server.world_map.fill_map((-10, 0, -2), (10, 10, 0), Traversability.BLOCKED)
 
     server.logger = ground_logger.Logger(server.world_map)
     server.drones = monitoring.DroneListing(server.world_map, server.logger)
