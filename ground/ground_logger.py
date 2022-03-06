@@ -13,6 +13,25 @@ from aerpawlib.util import Coordinate, VectorNED
 from lib.util import *
 from lib.mapping import WorldMap
 
+drone_colors = {
+        "drone1": "ff0000ff",
+        "drone2": "ff00ff00",
+        "drone3": "ffff0000",
+        "drone4": "ffffff00",
+        "drone5": "ff00ffff",
+        "drone6": "ffff00ff",
+        }
+
+drone_poly_scale_x = 0.00001
+drone_poly_scale_y = 0.00001
+
+drone_poly = [
+        [[0, 0, 0], [0, 0.5, -1], [0, 1, 0]],
+        [[0, 0, 0], [0, -0.5, -1], [0, -1, 0]],
+        [[1, 0, 0], [1, 0.5, -1], [1, 1, 0]],
+        [[1, 0, 0], [1, -0.5, -1], [1, -1, 0]],
+        ]
+
 class Logger:
     def __init__(self, world_map: WorldMap):
         self._drone_log = {}
@@ -187,8 +206,42 @@ class Logger:
                         continue
                 unique_tiles.append((i[0], i[1], self._world_map.block_to_coord(i[1])))
             
+            adding_style = KML.Style(
+                    KML.id(f"{drone}_sty"),
+                    KML.LineStyle(
+                        KML.color(drone_colors.get(drone, "ff00aaff")),
+                        KML.width(10),
+                        )
+                    )
+            r.append(adding_style)
+
+            d_poly = []
+            for tri in drone_poly:
+                t = []
+                for node in tri:
+                    x, y, alt = node
+                    x *= drone_poly_scale_x
+                    y *= drone_poly_scale_y
+                    i = unique_tiles[-1]
+                    x += i[2].lon
+                    y += i[2].lat
+                    alt += i[2].alt
+                    t.append([x, y, alt])
+                d_poly.append(t)
+            
+            for tri in d_poly:
+                cs = [*tri] + [tri[0]]
+                r.append(KML.Placemark(
+                        KML.styleUrl(f"#{drone}_sty"),
+                        KML.LineString(
+                            GX.altitudeMode("relativeToGround"),
+                            KML.coordinates("\n".join([f"{j[0]},{j[1]},{j[2]}" for j in cs]))
+                            )
+                        ))
+
             adding = KML.Placemark(
                     KML.name(f"{drone} path"),
+                    KML.styleUrl(f"#{drone}_sty"),
                     KML.LineString(
                         # KML.extrude(1),
                         KML.tessellate(1),

@@ -49,5 +49,3 @@ this can be used for qgroundcontrol
 TODO
 
 - event into automation somehow
-- make paths nicer
-- simplify to geojson
